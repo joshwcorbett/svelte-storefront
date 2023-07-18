@@ -253,7 +253,7 @@ export const useMoney = (
 
   // Call functions automatically when the properties are accessed
   // to keep these functions as an implementation detail
-  return new Proxy(lazyFormatters as any as UseMoneyValue, {
+  return new Proxy(lazyFormatters as never as UseMoneyValue, {
     get: (target, key) => {
       return Reflect.get(target, key)?.call(null)
     }
@@ -273,8 +273,14 @@ export const useLocaleKey = (locale: Locale) => {
  * @param url
  */
 export const urlHasLocale = (url: string) => {
-  const regex = /^\/[a-z]{2}-[a-z]{2}\//
+  const regex = /^\/[a-zA-Z]{2}-[a-zA-Z]{2}\/?/
   return regex.test(url)
+}
+
+export const localeFromUrl = (url: string) => {
+  const regex = /^\/([a-zA-Z]{2}-[a-zA-Z]{2})\/?/
+  const match = regex.exec(url)
+  return match?.length ? match[1] : undefined
 }
 
 export const parseAspectRatio = (aspectRatio: string) => {
