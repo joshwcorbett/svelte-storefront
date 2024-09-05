@@ -1,6 +1,34 @@
-import type { CurrencyCode, Locale, MoneyV2 } from '$lib/types'
+import type { CurrencyCode, Locale, MoneyV2, Shop } from '$lib/types'
 import { readable } from 'svelte/store'
-import { page } from '$app/stores'
+import type { Thing, WithContext, Organization } from 'schema-dts'
+
+type UseOrganizationSchema = (shop: Shop) => WithContext<Organization>
+export const useOrganizationSchema: UseOrganizationSchema = (shop: Shop) => {
+  const url = shop.primaryDomain?.url
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': url ? `${url}#organization` : undefined,
+    name: shop.name,
+    logo: shop.brand?.logo?.image?.url ?? undefined,
+    url: shop.primaryDomain?.url ?? undefined,
+    // sameAs: [],
+    potentialAction: url ? {
+      '@type': 'SearchAction',
+      target: `${url}search?q={search_term}`,
+      query: "required name=search_term"
+    } : undefined,
+  }
+}
+
+type SchemaSerializerParam = Thing | WithContext<Thing>
+export const serializeSchema = (thing: SchemaSerializerParam) => {
+  return `<script type="application/ld+json">${JSON.stringify(
+    thing,
+    null,
+    2
+  )}</script>`
+}
 
 export const useTimeAgo = (a: Date, b: Date) => {
   const msDiff = b.getTime() - a.getTime()
@@ -225,7 +253,7 @@ export const useMoney = (
 
   // Call functions automatically when the properties are accessed
   // to keep these functions as an implementation detail
-  return new Proxy(lazyFormatters as any as UseMoneyValue, {
+  return new Proxy(lazyFormatters as never as UseMoneyValue, {
     get: (target, key) => {
       return Reflect.get(target, key)?.call(null)
     }
@@ -237,6 +265,22 @@ export const useLocaleKey = (locale: Locale) => {
     return undefined
 
   return `${locale.language.toLowerCase()}-${locale.country.toLowerCase()}`
+}
+
+/**
+ * Takes a url and determines if it has a locale in it
+ * @returns `boolean`
+ * @param url
+ */
+export const urlHasLocale = (url: string) => {
+  const regex = /^\/[a-zA-Z]{2}-[a-zA-Z]{2}\/?/
+  return regex.test(url)
+}
+
+export const localeFromUrl = (url: string) => {
+  const regex = /^\/([a-zA-Z]{2}-[a-zA-Z]{2})\/?/
+  const match = regex.exec(url)
+  return match?.length ? match[1] : undefined
 }
 
 export const parseAspectRatio = (aspectRatio: string) => {
