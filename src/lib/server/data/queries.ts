@@ -34,16 +34,21 @@ export const layoutQuery = gql`
 
 export const collectionQuery = gql`
   ${PRODUCT_CARD_FRAGMENT}
+
   query CollectionDetails (
     $handle: String!
     $country: CountryCode
     $language: LanguageCode
     $pageBy: Int!
-    $cursor: String
+    $afterCursor: String
+    $beforeCursor: String
     $filters: [ProductFilter!]
     $sortKey: ProductCollectionSortKeys!
     $reverse: Boolean
-  ) @inContext (country: $country, language: $language) {
+  ) @inContext (
+    country: $country,
+    language: $language
+  ) {
     collection(handle: $handle) {
       id
       handle
@@ -62,7 +67,8 @@ export const collectionQuery = gql`
       }
       products(
         first: $pageBy,
-        after: $cursor,
+        before: $beforeCursor,
+        after: $afterCursor,
         filters: $filters,
         sortKey: $sortKey,
         reverse: $reverse
@@ -98,7 +104,10 @@ export const productQuery = gql`
     $language: LanguageCode
     $handle: String!
     $selectedOptions: [SelectedOptionInput!]!
-  ) @inContext (country: $country, language: $language) {
+  ) @inContext (
+    country: $country,
+    language: $language
+  ) {
     product(handle: $handle) {
       id
       title
@@ -137,7 +146,10 @@ export const recommendedProductsQuery = gql`
     $count: Int!
     $country: CountryCode
     $language: LanguageCode
-  ) @inContext (country: $country, language: $language) {
+  ) @inContext (
+    country: $country,
+    language: $language
+  ) {
     recommended: productRecommendations(productId: $productId) {
       ...ProductCard
     }
@@ -151,7 +163,14 @@ export const recommendedProductsQuery = gql`
 
 export const CART_QUERY = gql`
   ${CART_FRAGMENT}
-  query CartQuery ($cartId: ID!, $country: CountryCode, $language: LanguageCode) @inContext (country: $country, language: $language) {
+  query CartQuery (
+    $cartId: ID!,
+    $country: CountryCode,
+    $language: LanguageCode
+  ) @inContext (
+    country: $country,
+    language: $language
+  ) {
     cart (id: $cartId) {
       ...CartFragment
     }
@@ -159,8 +178,8 @@ export const CART_QUERY = gql`
 `
 
 export const CREATE_CART_MUTATION = gql`
-  ${LINES_CART_FRAGMENT}
   ${USER_ERROR_FRAGMENT}
+  ${CART_FRAGMENT}
   mutation (
     $input: CartInput!
     $country: CountryCode
@@ -168,8 +187,7 @@ export const CREATE_CART_MUTATION = gql`
   ) @inContext (country: $country, language: $language) {
     cartCreate (input: $input) {
       cart {
-        ...CartLinesFragment
-        checkoutUrl
+        ...CartFragment
       }
       errors: userErrors {
         ...ErrorFragment
@@ -179,7 +197,7 @@ export const CREATE_CART_MUTATION = gql`
 `
 
 export const ADD_LINES_MUTATION = gql`
-  ${LINES_CART_FRAGMENT}
+  ${CART_FRAGMENT}
   ${USER_ERROR_FRAGMENT}
   mutation (
     $cartId: ID!
@@ -189,7 +207,7 @@ export const ADD_LINES_MUTATION = gql`
   ) @inContext (country: $country, language: $language) {
     cartLinesAdd (cartId: $cartId, lines: $lines) {
       cart {
-        ...CartLinesFragment
+        ...CartFragment
       }
       errors: userErrors {
         ...ErrorFragment
@@ -199,7 +217,7 @@ export const ADD_LINES_MUTATION = gql`
 `
 
 export const REMOVE_LINES_MUTATION = gql`
-  ${LINES_CART_FRAGMENT}
+  ${CART_FRAGMENT}
   ${USER_ERROR_FRAGMENT}
   mutation (
     $cartId: ID!
@@ -209,7 +227,7 @@ export const REMOVE_LINES_MUTATION = gql`
   ) @inContext (country: $country, language: $language) {
     cartLinesRemove (cartId: $cartId, lineIds: $lineIds) {
       cart {
-        ...CartLinesFragment
+        ...CartFragment
       }
       errors: userErrors {
         ...ErrorFragment

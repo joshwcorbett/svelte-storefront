@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit'
 import { productQuery, recommendedProductsQuery } from '$lib/server/data'
 import type { PageServerLoad } from './$types'
-import type { SelectedOptionInput } from '$lib/types'
+import type { Product, SelectedOptionInput } from '$lib/types'
 import invariant from 'tiny-invariant'
 
 export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) => {
@@ -23,11 +23,10 @@ export const load: PageServerLoad = async ({ params, url, locals, setHeaders }) 
       language: locale.language,
     },
   })
-  const { product } = data
+  const product = data.product as Product | null
 
-  if (!product?.id) {
-    throw error(404, 'Product not found')
-  }
+  if (!product?.id)
+    error(404, 'Product not found')
 
   const firstVariant = product.variants?.nodes?.[0]
   const selectedVariant = product.selectedVariant ?? firstVariant

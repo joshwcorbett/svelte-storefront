@@ -1,19 +1,32 @@
 <script lang="ts">
-import type { LayoutServerData } from './$types'
 import HeadTemplate from '$lib/components/HeadTemplate.svelte'
 import '../../app.css'
+import { setCartState, getCartState } from '$lib/state/cart.svelte'
 
-export let data: LayoutServerData
+let {data, children} = $props()
+let {shop, cart} = $derived(data.layout)
 
-$: ({ shop, cart } = data.layout)
+setCartState()
+const cartState = getCartState()
+
+$effect(() => {
+  cartState.cart = cart
+})
 </script>
+
 <HeadTemplate />
 
 <header>
   <h1>{shop.name}</h1>
-  <a href="/cart">Cart - {cart?.totalQuantity ?? 0}</a>
+  {#await cart}
+    <a href="/cart">Cart - 0 (fallback)</a>
+  {:then cart}
+    <a href="/cart">Cart - {cart?.totalQuantity ?? 0}</a>
+  {:catch error}
+    <a href="/cart">Cart - 0 (error)</a>
+  {/await}
 </header>
 
 <main>
-  <slot />
+  {@render children()}
 </main>

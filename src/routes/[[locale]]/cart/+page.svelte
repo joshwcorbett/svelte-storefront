@@ -1,17 +1,17 @@
 <script lang="ts">
-import type { PageServerData, ActionData } from './$types'
 import { applyAction, deserialize } from '$app/forms'
 import { invalidateAll } from '$app/navigation'
 import { CartAction } from '$lib/types'
 import QuantityUpdate from '$lib/components/Cart/QuantityUpdate.svelte'
 
-export let data: PageServerData
-export let form: ActionData
+let {data, form} = $props()
 
-$: ({ cart } = data)
+const {cart} = $derived(data)
 
-const handleCartAction = async (event: Event, action: CartAction) => {
-  const target = event.target as HTMLFormElement
+const handleCartAction = async (e: Event, action: CartAction) => {
+  e.preventDefault()
+
+  const target = e.target as HTMLFormElement
   const body = new FormData(target)
   let response: Response
 
@@ -24,7 +24,7 @@ const handleCartAction = async (event: Event, action: CartAction) => {
   })
 
   const result = deserialize(await response.text())
-  result.type === 'success' && invalidateAll()
+  result.type === 'success' && await invalidateAll()
   applyAction(result)
 }
 </script>
@@ -59,13 +59,13 @@ const handleCartAction = async (event: Event, action: CartAction) => {
           {/each}
         {/if}
       </div>
-      <form on:submit|preventDefault={(e) => handleCartAction(e, CartAction.UPDATE_CART)}>
+      <form onsubmit={(e) => handleCartAction(e, CartAction.UPDATE_CART)}>
         <QuantityUpdate
           {line}
           {quantity}
           maxQuantity={merchandise.quantityAvailable}/>
       </form>
-      <form on:submit|preventDefault={(e) => handleCartAction(e, CartAction.REMOVE_FROM_CART)}>
+      <form onsubmit={(e) => handleCartAction(e, CartAction.REMOVE_FROM_CART)}>
         <input type="hidden" name="lineIds" value={JSON.stringify([id])} />
         <button type="submit">Remove Item</button>
       </form>
@@ -73,7 +73,7 @@ const handleCartAction = async (event: Event, action: CartAction) => {
   {/each}
 
   <div class="flex flex-col gap-4">
-    <form on:submit|preventDefault={(e) => handleCartAction(e, CartAction.UPDATE_DISCOUNT)}>
+    <form onsubmit={(e) => handleCartAction(e, CartAction.UPDATE_DISCOUNT)}>
       {#if cart.discountCodes?.length}
         <p>Discount</p>
         {#each cart.discountCodes as discount}

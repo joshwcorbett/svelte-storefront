@@ -21,6 +21,7 @@ import type {
   Cart,
   Locale,
 } from '$lib/types'
+import { CartAction } from '$lib/types'
 import {
   CART_QUERY,
   CREATE_CART_MUTATION,
@@ -148,13 +149,6 @@ export const load: PageServerLoad = async ({ request, locals }) => {
   }
 }
 
-enum CartAction {
-  ADD_TO_CART = 'ADD_TO_CART',
-  REMOVE_FROM_CART = 'REMOVE_FROM_CART',
-  UPDATE_CART = 'UPDATE_CART',
-  UPDATE_DISCOUNT = 'UPDATE_DISCOUNT',
-  UPDATE_BUYER_IDENTITY = 'UPDATE_BUYER_IDENTITY',
-}
 const handleCartAction = async (event: RequestEvent, action: CartAction) => {
   const { request, locals, cookies } = event
   const { storefront } = locals
@@ -251,7 +245,7 @@ const handleCartAction = async (event: RequestEvent, action: CartAction) => {
 
   // set the cart cookie
   if (cartId)
-    cookies.set('cart', `${cartId.split('/').pop()}`)
+    cookies.set('cart', `${cartId.split('/').pop()}`, { path: new URL(request.url).pathname })
 
   // if a redirect is requested, redirect
   const redirectTo = formData.get('redirectTo') ?? undefined
@@ -259,6 +253,7 @@ const handleCartAction = async (event: RequestEvent, action: CartAction) => {
     throw redirect(303, redirectTo)
 
   const { cart, errors } = result
+
   return {
     cart,
     errors,

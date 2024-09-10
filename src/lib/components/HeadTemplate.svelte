@@ -1,12 +1,12 @@
 <script lang="ts">
 import { page } from '$app/stores'
 
-$: ({ seo, layout } = $page.data)
-$: ({ shop } = layout)
+let {seo, layout} = $derived($page.data)
+let {shop} = $derived(layout)
 
-$: title = seo?.title ? `${seo.title} | ${shop.name}` : shop.name
-$: description = seo?.description || shop.description
-$: robots = seo?.robots || 'index, follow'
+let title = $derived(seo?.title ? `${seo.title} | ${shop.name}` : shop.name)
+let description = $derived(seo?.description || shop.description)
+let robots = $derived(seo?.robots || 'index, follow')
 </script>
 
 <svelte:head>

@@ -1,46 +1,44 @@
 <script lang="ts">
-import type { PageData } from './$types'
 import { page } from '$app/stores'
 import { goto } from '$app/navigation'
 
-export let data: PageData
+let { data } = $props()
+let collection = $state(data.collection)
+let loading = $state(false)
 
-let collection = data.collection
-let loading = false
+const { endCursor, hasNextPage } = $derived(data.collection.products.pageInfo)
 
-$: urlCursor = $page.url.searchParams.get('cursor')
-$: ({ endCursor, hasNextPage } = data.collection.products.pageInfo)
-$: {
+const loadMore = async (e: Event) => {
+  e.preventDefault()
+  if (!endCursor || !hasNextPage || loading) return
+
+  loading = true
+  const url = new URL($page.url)
+  url.searchParams.set('after', endCursor)
+
+  await goto(url, {
+    replaceState: true,
+    noScroll: true
+  })
+
   collection = {
     ...collection,
     products: {
       ...collection.products,
-      // nodes: [
-      //   ...collection.products.nodes,
-      //   ...data.collection.products.nodes,
-      // ],
-      nodes: urlCursor
-        ? [...collection.products.nodes, ...data.collection.products.nodes]
-        : data.collection.products.nodes,
+      nodes: [
+        ...collection.products.nodes,
+        ...data.collection.products.nodes
+      ]
     }
   }
-}
 
-const loadMore = async () => {
-  if (!endCursor || !hasNextPage || loading) return
-  loading = true
-  const url = new URL($page.url.href)
-  url.searchParams.set('cursor', endCursor)
-  goto(url.href, {
-    replaceState: true,
-    noScroll: true,
-  })
   loading = false
 }
+
 </script>
 
 <div class="grid grid-cols-6 gap-4">
-  {#each collection.products.nodes as product}
+  {#each collection.products.nodes as product (product.id)}
     <a href="/products/{product.handle}" class="col-span-1 bg-gray-100">
       {product.title}
     </a>
@@ -48,7 +46,7 @@ const loadMore = async () => {
 </div>
 
 {#if hasNextPage}
-  <button disabled={loading} on:click|preventDefault={loadMore}>
+  <button disabled={loading} onclick={loadMore}>
     { loading ? 'Loading...' : 'Load more products' }
   </button>
 {/if}

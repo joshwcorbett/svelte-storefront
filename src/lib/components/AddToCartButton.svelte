@@ -2,41 +2,54 @@
 import type { CartLineInput } from '$lib/types'
 import { applyAction, deserialize } from '$app/forms'
 import { page } from '$app/stores'
-  import { invalidateAll } from '$app/navigation'
+import { invalidateAll } from '$app/navigation'
+import { getCartState } from '$lib/state/cart.svelte'
 
-export let lines: CartLineInput[] = []
-export let disabled = false
+const cart = getCartState()
 
-$: ({ selectedLocale } = $page.data)
+let { lines = [], disabled = false } = $props<{
+  lines: CartLineInput[]
+  disabled: boolean
+}>()
 
-let status = 'idle'
-$: label = {
-  idle: 'Add To Cart',
-  adding: 'Adding...',
-  added: 'Added',
-  error: 'Could\'nt add to cart',
-}[status]
+let { selectedLocale } = $derived($page.data)
+let status = $state('idle')
 
-const handleSubmit = async (event: Event) => {
-  status = 'adding'
-  const data = new FormData(event.target as HTMLFormElement)
-  const response = await fetch('/cart?/ADD_TO_CART', {
-    method: 'POST',
-    body: data,
-  })
-  const result = deserialize(await response.text())
-  if (result.type === 'success') {
-    status = 'added'
-    invalidateAll()
+let label = $derived.by(() => {
+  switch (status) {
+    case 'idle':
+      return 'Add To Cart'
+    case 'adding':
+      return 'Adding...'
+    case 'added':
+      return 'Added'
+    case 'error':
+      return 'Could\'nt add to cart'
   }
+})
+
+$effect(() => {
+  if (status === 'added' || status === 'error') {
+    setTimeout(() => {
+      status = 'idle'
+    }, 1750)
+  }
+})
+
+const handleSubmit = async (e: Event) => {
+  e.preventDefault()
+  status = 'adding'
+
+  const data = new FormData(e.target as HTMLFormElement)
+  const result = await cart.add(data)
+  status = result.type === 'success'
+    ? 'added'
+    : 'error'
   applyAction(result)
-  setTimeout(() => {
-    status = 'idle'
-  }, 1750)
 }
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
+<form onsubmit={handleSubmit}>
   <input type="hidden" name="lines" value={JSON.stringify(lines)} />
   <input type="hidden" name="countryCode" value={selectedLocale.country} />
 

@@ -61,11 +61,17 @@ export const usePrefixPathWithLocale = (path: string) => {
  * Shopify's 'Online Store' stores cart IDs in a 'cart' cookie.
  * By doing the same, merchants can switch from the Online Store to Hydrogen
  * without customers losing carts.
+ *
+ * Converts cookie from `Z2NwLXVzLWV4YW1wbGU6MDEyMzQ1Njc4OTAxMjM0NTY3ODkw%3Fkey%3Dexamplekey1234567890` to `gid://shopify/Cart/Z2NwLXVzLWV4YW1wbGU6MDEyMzQ1Njc4OTAxMjM0NTY3ODkw?key=examplekey1234567890`
  */
 export const getCartId = (request: Request) => {
-  const cookies = request.headers.get('cookie')
-  const cartCookie = cookies?.split(';').find((cookie) => cookie.trim().startsWith('cart='))
-  return cartCookie ? `gid://shopify/Cart/${cartCookie?.split('=')[1]}` : undefined
+  const cookies = request.headers.get('cookie')?.split(';').map(cookie => cookie.trim());
+  const cartCookie = cookies?.find(cookie => cookie.startsWith('cart='));
+  if (!cartCookie) return null;
+
+  const cartId = cartCookie.split('=')[1];
+  const cartIdDecoded = decodeURIComponent(cartId);
+  return `gid://shopify/Cart/${cartIdDecoded}`;
 }
 
 /**
